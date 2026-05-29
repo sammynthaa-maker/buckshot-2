@@ -4,4 +4,6 @@ Use (https://www.w3schools.com/html/tryit.asp?filename=tryhtml_default_default) 
 
 STEPS:
 1.) go to the game in game forder and copy all of the code
-2.)
+
+
+ee
