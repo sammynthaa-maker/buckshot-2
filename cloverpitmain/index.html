@@ -149,6 +149,131 @@
       #terminal-toggle:hover {
         background: #00cc00;
       }
+
+      /* Save/Export Tool Styles */
+      #save-export-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 350px;
+        background: #2a2a2a;
+        border: 2px solid #00ff00;
+        border-radius: 8px;
+        padding: 20px;
+        font-family: 'Arial', sans-serif;
+        z-index: 998;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+        color: #00ff00;
+      }
+
+      #save-export-container h2 {
+        margin: 0 0 15px 0;
+        font-size: 18px;
+        text-align: center;
+        border-bottom: 2px solid #00ff00;
+        padding-bottom: 10px;
+      }
+
+      .save-export-section {
+        margin-bottom: 15px;
+      }
+
+      .save-export-section h3 {
+        margin: 10px 0 8px 0;
+        font-size: 14px;
+        color: #00ff00;
+      }
+
+      .save-export-button {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        background: #00ff00;
+        color: #1e1e1e;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 13px;
+        transition: background 0.2s;
+      }
+
+      .save-export-button:hover {
+        background: #00dd00;
+      }
+
+      .save-export-button:active {
+        background: #00aa00;
+      }
+
+      .save-export-button.danger {
+        background: #ff4444;
+      }
+
+      .save-export-button.danger:hover {
+        background: #ff0000;
+      }
+
+      #file-input {
+        display: none;
+      }
+
+      .save-export-status {
+        margin-top: 10px;
+        padding: 8px;
+        background: #1e1e1e;
+        border-left: 3px solid #00ff00;
+        border-radius: 3px;
+        font-size: 12px;
+        max-height: 80px;
+        overflow-y: auto;
+      }
+
+      .save-export-status.error {
+        border-left-color: #ff0000;
+        color: #ff6666;
+      }
+
+      .save-export-status.success {
+        border-left-color: #00ff00;
+        color: #00ff00;
+      }
+
+      .save-export-toggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #00ff00;
+        color: #1e1e1e;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-weight: bold;
+        z-index: 997;
+        display: none;
+      }
+
+      .save-export-toggle:hover {
+        background: #00cc00;
+      }
+
+      #save-export-minimize {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #ff9900;
+        color: #1e1e1e;
+        border: none;
+        padding: 2px 8px;
+        cursor: pointer;
+        border-radius: 3px;
+        font-weight: bold;
+      }
+
+      #save-export-minimize:hover {
+        background: #ffbb00;
+      }
     </style>
   </head>
   <body>
@@ -163,6 +288,32 @@
       </div>
       <div id="unity-warning"></div>
     </div>
+    
+    <!-- Save/Export Tool -->
+    <div id="save-export-container">
+      <button id="save-export-minimize">−</button>
+      <h2>💾 Save Manager</h2>
+      
+      <div class="save-export-section">
+        <h3>📥 Download Save</h3>
+        <button class="save-export-button" id="download-save-btn">Download Save File</button>
+      </div>
+
+      <div class="save-export-section">
+        <h3>📤 Upload Save</h3>
+        <button class="save-export-button" id="upload-save-btn">Choose File...</button>
+        <input type="file" id="file-input" accept=".save,.json,.dat">
+      </div>
+
+      <div class="save-export-section">
+        <h3>⚙️ Storage</h3>
+        <button class="save-export-button" id="clear-local-btn" style="font-size: 12px;">Clear Local Data</button>
+        <button class="save-export-button" id="refresh-btn" style="font-size: 12px;">Refresh Data</button>
+      </div>
+
+      <div id="save-export-status" class="save-export-status" style="display:none;"></div>
+    </div>
+    <button class="save-export-toggle" id="save-export-toggle">💾 Save Manager</button>
     
     <!-- Terminal -->
     <div id="terminal-container">
@@ -179,6 +330,123 @@
     <button id="terminal-toggle">Open Terminal</button>
     
     <script>
+      // Save/Export Tool functionality
+      const saveManager = {
+        STORAGE_KEY: 'cloverpitsave',
+        statusDiv: document.getElementById('save-export-status'),
+        
+        init() {
+          document.getElementById('download-save-btn').addEventListener('click', () => this.downloadSave());
+          document.getElementById('upload-save-btn').addEventListener('click', () => this.triggerUpload());
+          document.getElementById('file-input').addEventListener('change', (e) => this.uploadSave(e));
+          document.getElementById('clear-local-btn').addEventListener('click', () => this.clearLocal());
+          document.getElementById('refresh-btn').addEventListener('click', () => this.refreshData());
+          document.getElementById('save-export-minimize').addEventListener('click', () => this.toggle());
+          document.getElementById('save-export-toggle').addEventListener('click', () => this.toggle());
+        },
+
+        toggle() {
+          const container = document.getElementById('save-export-container');
+          const toggle = document.getElementById('save-export-toggle');
+          
+          if (container.style.display === 'none') {
+            container.style.display = 'block';
+            toggle.style.display = 'none';
+          } else {
+            container.style.display = 'none';
+            toggle.style.display = 'block';
+          }
+        },
+
+        showStatus(message, isError = false) {
+          this.statusDiv.style.display = 'block';
+          this.statusDiv.textContent = message;
+          this.statusDiv.className = 'save-export-status ' + (isError ? 'error' : 'success');
+          setTimeout(() => {
+            this.statusDiv.style.display = 'none';
+          }, 3000);
+        },
+
+        downloadSave() {
+          try {
+            // Try to get save from localStorage (for local saves)
+            const saveData = localStorage.getItem(this.STORAGE_KEY);
+            
+            if (!saveData) {
+              this.showStatus('No save data found! Play the game first.', true);
+              return;
+            }
+
+            // Create a blob with the save data
+            const blob = new Blob([saveData], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `CloverPit_Save_${new Date().getTime()}.save`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            this.showStatus('✓ Save downloaded successfully!');
+          } catch (error) {
+            this.showStatus(`Error downloading save: ${error.message}`, true);
+          }
+        },
+
+        triggerUpload() {
+          document.getElementById('file-input').click();
+        },
+
+        uploadSave(event) {
+          try {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const content = e.target.result;
+                localStorage.setItem(this.STORAGE_KEY, content);
+                this.showStatus('✓ Save uploaded and restored successfully!');
+              } catch (error) {
+                this.showStatus(`Error saving file: ${error.message}`, true);
+              }
+            };
+            reader.readAsText(file);
+          } catch (error) {
+            this.showStatus(`Error reading file: ${error.message}`, true);
+          }
+        },
+
+        clearLocal() {
+          if (confirm('Are you sure? This will delete your local save data!')) {
+            try {
+              localStorage.removeItem(this.STORAGE_KEY);
+              this.showStatus('✓ Local data cleared!');
+            } catch (error) {
+              this.showStatus(`Error clearing data: ${error.message}`, true);
+            }
+          }
+        },
+
+        refreshData() {
+          try {
+            const saveData = localStorage.getItem(this.STORAGE_KEY);
+            if (saveData) {
+              this.showStatus(`✓ Save data found (${Math.round(saveData.length / 1024)} KB)`);
+            } else {
+              this.showStatus('No save data found in storage', true);
+            }
+          } catch (error) {
+            this.showStatus(`Error: ${error.message}`, true);
+          }
+        }
+      };
+
+      // Initialize save manager
+      saveManager.init();
+
       // Terminal functionality
       const terminal = {
         output: document.getElementById('terminal-output'),
