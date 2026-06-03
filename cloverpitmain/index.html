@@ -10,7 +10,7 @@
       #unity-container { position: fixed; width: 100%; height: 100%; }
       #unity-canvas { width: 100%; height: 100%; background: #231F20 }
       #unity-loading-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none }
-      #unity-logo { width: 154px; height: 130px; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 154 130"><rect fill="%23231F20" width="154" height="130"/></svg>') no-repeat center }
+      #unity-logo { width: 154px; height: 130px; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 154 130"><rect fill="%23231F20" width="154" height="130"/>[...]
       #unity-progress-bar-empty { margin-left: auto; margin-right: auto; width: 141px; height: 18px; margin-top: 10px; background: #333; }
       #unity-progress-bar-full { width: 0%; height: 18px; margin-top: 10px; background: #4CAF50; }
       #unity-warning { position: absolute; left: 50%; top: 5%; transform: translate(-50%); background: white; padding: 10px; display: none }
@@ -37,6 +37,118 @@
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
       }
+      
+      /* Terminal Styles */
+      #terminal-container {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 400px;
+        height: 250px;
+        background: #1e1e1e;
+        border: 2px solid #00ff00;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Courier New', monospace;
+        z-index: 1000;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        margin: 10px;
+      }
+      
+      #terminal-header {
+        background: #00ff00;
+        color: #1e1e1e;
+        padding: 8px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+        border-radius: 3px 3px 0 0;
+      }
+      
+      #terminal-close {
+        background: #ff0000;
+        color: white;
+        border: none;
+        padding: 2px 8px;
+        cursor: pointer;
+        border-radius: 3px;
+        font-weight: bold;
+      }
+      
+      #terminal-close:hover {
+        background: #cc0000;
+      }
+      
+      #terminal-output {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        color: #00ff00;
+        background: #1e1e1e;
+        border-bottom: 1px solid #00ff00;
+      }
+      
+      #terminal-input-container {
+        display: flex;
+        padding: 8px;
+        background: #1e1e1e;
+        border-radius: 0 0 3px 3px;
+      }
+      
+      #terminal-input-prefix {
+        color: #00ff00;
+        margin-right: 5px;
+        white-space: nowrap;
+      }
+      
+      #terminal-input {
+        flex: 1;
+        background: #1e1e1e;
+        color: #00ff00;
+        border: none;
+        outline: none;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+      }
+      
+      .terminal-line {
+        margin: 2px 0;
+        color: #00ff00;
+      }
+      
+      .terminal-command {
+        color: #ffff00;
+        font-weight: bold;
+      }
+      
+      .terminal-error {
+        color: #ff0000;
+      }
+      
+      .terminal-success {
+        color: #00ff00;
+      }
+      
+      #terminal-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #00ff00;
+        color: #1e1e1e;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-weight: bold;
+        z-index: 999;
+        display: none;
+      }
+      
+      #terminal-toggle:hover {
+        background: #00cc00;
+      }
     </style>
   </head>
   <body>
@@ -51,7 +163,140 @@
       </div>
       <div id="unity-warning"></div>
     </div>
+    
+    <!-- Terminal -->
+    <div id="terminal-container">
+      <div id="terminal-header">
+        <span>Terminal</span>
+        <button id="terminal-close">×</button>
+      </div>
+      <div id="terminal-output"></div>
+      <div id="terminal-input-container">
+        <span id="terminal-input-prefix">&gt;</span>
+        <input type="text" id="terminal-input" placeholder="Enter command...">
+      </div>
+    </div>
+    <button id="terminal-toggle">Open Terminal</button>
+    
     <script>
+      // Terminal functionality
+      const terminal = {
+        output: document.getElementById('terminal-output'),
+        input: document.getElementById('terminal-input'),
+        container: document.getElementById('terminal-container'),
+        toggleBtn: document.getElementById('terminal-toggle'),
+        closeBtn: document.getElementById('terminal-close'),
+        history: [],
+        historyIndex: -1,
+        
+        init() {
+          this.input.addEventListener('keydown', (e) => this.handleInput(e));
+          this.closeBtn.addEventListener('click', () => this.toggle());
+          this.toggleBtn.addEventListener('click', () => this.toggle());
+          this.addLine('Welcome to CloverPit Terminal', 'terminal-success');
+          this.addLine('Type "help" for available commands', 'terminal-success');
+          this.addLine('');
+        },
+        
+        toggle() {
+          if (this.container.style.display === 'none') {
+            this.container.style.display = 'flex';
+            this.toggleBtn.style.display = 'none';
+            this.input.focus();
+          } else {
+            this.container.style.display = 'none';
+            this.toggleBtn.style.display = 'block';
+          }
+        },
+        
+        addLine(text = '', className = 'terminal-line') {
+          const line = document.createElement('div');
+          line.className = className;
+          line.textContent = text;
+          this.output.appendChild(line);
+          this.output.scrollTop = this.output.scrollHeight;
+        },
+        
+        handleInput(e) {
+          if (e.key === 'Enter') {
+            const command = this.input.value.trim();
+            if (command) {
+              this.addLine(`> ${command}`, 'terminal-command');
+              this.history.push(command);
+              this.historyIndex = this.history.length;
+              this.executeCommand(command);
+            }
+            this.input.value = '';
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (this.historyIndex > 0) {
+              this.historyIndex--;
+              this.input.value = this.history[this.historyIndex];
+            }
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (this.historyIndex < this.history.length - 1) {
+              this.historyIndex++;
+              this.input.value = this.history[this.historyIndex];
+            } else {
+              this.historyIndex = this.history.length;
+              this.input.value = '';
+            }
+          }
+        },
+        
+        executeCommand(cmd) {
+          const parts = cmd.toLowerCase().split(' ');
+          const command = parts[0];
+          const args = parts.slice(1);
+          
+          switch(command) {
+            case 'help':
+              this.addLine('Available commands:', 'terminal-success');
+              this.addLine('  help           - Show this help message');
+              this.addLine('  clear          - Clear terminal');
+              this.addLine('  echo [text]    - Print text');
+              this.addLine('  info           - Show game info');
+              this.addLine('  status         - Show game status');
+              this.addLine('  reload         - Reload the page');
+              break;
+              
+            case 'clear':
+              this.output.innerHTML = '';
+              break;
+              
+            case 'echo':
+              this.addLine(args.join(' ') || '(no text provided)');
+              break;
+              
+            case 'info':
+              this.addLine('CloverPit v1.3', 'terminal-success');
+              this.addLine('Developer: Panik Arcade');
+              this.addLine('Built with: Unity');
+              break;
+              
+            case 'status':
+              this.addLine('Game Status: Running', 'terminal-success');
+              this.addLine('Canvas: ' + (document.querySelector('#unity-canvas') ? 'Active' : 'Inactive'));
+              break;
+              
+            case 'reload':
+              this.addLine('Reloading page...', 'terminal-success');
+              setTimeout(() => location.reload(), 500);
+              break;
+              
+            default:
+              this.addLine(`Command not found: ${command}`, 'terminal-error');
+              this.addLine('Type "help" for available commands', 'terminal-error');
+          }
+          this.addLine('');
+        }
+      };
+      
+      // Initialize terminal
+      terminal.init();
+      
+      // Original game loading code
       var loadingText = document.querySelector("#loading-text");
       let totalBytes = 0;
       let loadedBytes = 0;
