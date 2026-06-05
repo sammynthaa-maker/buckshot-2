@@ -12,4 +12,6 @@ STEPS:
 
 4.) done.
 
-5.) Please make sure to click the X's on the corners of the avaliable canvas in each game, they block inputs.
+
+
+Ext. ) Please make sure to click the X's on the corners of the avaliable canvas in each game, they block inputs.
