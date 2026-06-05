@@ -11,3 +11,7 @@ STEPS:
 3.) Paste your code to W3 schools and press run
 
 4.) done.
+
+
+
+Ext. ) Please make sure to click the X's on the corners of the avaliable canvas in each game, they block inputs.
