@@ -15,3 +15,4 @@ STEPS:
 
 
 Ext. ) Please make sure to click the X's on the corners of the avaliable canvas in each game, they block inputs.
+Ext. 2) Your data will save upon the insertion of the code once more after you return to the site, this only works if you don't wipe your cookies.
